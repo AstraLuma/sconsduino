@@ -20,6 +20,14 @@ class Arduino(object):
 			# C++ only
 			CXXFLAGS=['-fno-exceptions', '-fno-rtti', '-felide-constructors', '-std=gnu++11'],
 			LINKFLAGS=['-Os', '-Wl,--gc-sections'],
+		)
+		self.build_dir = self.env.Dir(build_dir)
+		self.src_dir = self.env.Dir(src_dir)
+	def _finish_init(self):
+		"""
+		MUST be called after all the bits have been defined.
+		"""
+		self.env.Append(
 			BUILDERS={
 				'Eep': self.env.Builder(action='$OBJCOPY -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $SOURCE $TARGET',
 					suffix='.eep',
@@ -29,10 +37,8 @@ class Arduino(object):
 					suffix='.hex',
 					src_suffix='.elf',
 					),
-			}
+			},
 		)
-		self.build_dir = self.env.Dir(build_dir)
-		self.src_dir = self.env.Dir(src_dir)
 
 	def _load_config(self):
 		# FIXME: use a real config file
@@ -51,7 +57,7 @@ class Arduino(object):
 
 	def add_generator(self, srcs):
 		"""
-
+		Add a thing that produces a list of sources.
 		"""
 		for src in srcs:
 			self.add(src)
@@ -77,8 +83,7 @@ class Arduino(object):
 		Add Arduino libraries
 		"""
 		for l in libs:
-			for s in self._find_sources(self.env['ARDUINO'], 'libraries', 'lib'):
-				self.add(s)
+			self.add_generator(self._find_sources(self.env['ARDUINO'], 'libraries', 'lib'))
 			self.env.Append(CPPPATH=[os.path.join('$ARDUINO', 'libraries', 'lib')])
 
 	def _find_sources(self, *dirs, **kw):
@@ -103,8 +108,7 @@ class Arduino(object):
 		}
 
 	def _find_core(self, core):
-		for c in self._find_sources(core):
-			self.add(c)
+		self.add_generator(self._find_sources(core))
 
 	def add(self, src):
 		base, ext = os.path.splitext(os.path.basename(str(src)))
@@ -113,11 +117,10 @@ class Arduino(object):
 		self.objects += self.env.Object(self.build_dir.File(base+'.o'), src)
 
 	def sketch(self, sketch):
-		for s in self._find_sources(self.src_dir):
-			self.add(s)
+		self.add_generator(self._find_sources(self.src_dir))
 		elf = self.env.Program(sketch+'.elf', self.objects)
 		eep = self.env.Eep(sketch+'.eep', elf)
 		hex = self.env.Hex(sketch+'.hex', elf)
 		print self.env['OBJCOPY']
-		self.env.Default(hex)
+		self.env.Default(hex, eep)
 		self.env.Alias('upload', self.env.Command(None, hex, self.upload_command()))
