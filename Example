@@ -1,9 +1,6 @@
 from sconsduino.teensy import Teensy
-from sconsduino.nanopb import NanoPB
-env = Environment()
-npb = NanoPB(env=env, build_dir='bin')
 
-npb.add("protocols/server.proto")
+env = Environment()
 
 teensy = Teensy(
 	version=3.1,
@@ -11,8 +8,16 @@ teensy = Teensy(
 	build_dir='bin',
 )
 
-teensy.libs("wire", "CC3000")
+# Set to 24000000, 48000000, or 96000000 to set CPU core speed
 teensy.cpu(speed=96000000)
+
+# (Teensy)
+# For key layouts, set to US_ENGLISH, CANADIAN_FRENCH, CANADIAN_MULTILINGUAL, DANISH, FINNISH, FRENCH, FRENCH_BELGIAN, FRENCH_SWISS, 
+# GERMAN, GERMAN_MAC, GERMAN_SWISS, ICELANDIC, IRISH, ITALIAN, NORWEGIAN, PORTUGUESE, PORTUGUESE_BRAZILIAN, SPANISH, SPANISH_LATIN_AMERICA, 
+# SWEDISH, TURKISH, UNITED_KINGDOM, US_INTERNATIONAL
 teensy.layout('US_ENGLISH')
-teensy.add_generator(npb)
+
+# (Teensy)
+teensy.usb_mode('SERIAL')
+
 teensy.sketch('blinky')
