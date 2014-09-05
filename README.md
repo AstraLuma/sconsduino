@@ -30,3 +30,8 @@ board.usb_mode('SERIAL')
 
 board.sketch('blinky')
 ```
+
+Supported Boards
+----------------
+* Teensy 3/3.1
+* Bare ATMEGA328 (very similar to an uno)
