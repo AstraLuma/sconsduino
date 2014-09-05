@@ -28,16 +28,6 @@ class Arduino(object):
 		MUST be called after all the bits have been defined.
 		"""
 		self.env.Append(
-			BUILDERS={
-				'Eep': self.env.Builder(action='$OBJCOPY -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $SOURCE $TARGET',
-					suffix='.eep',
-					src_suffix='.elf',
-					),
-				'Hex': self.env.Builder(action='$OBJCOPY -O ihex -R .eeprom $SOURCE $TARGET',
-					suffix='.hex',
-					src_suffix='.elf',
-					),
-			},
 		)
 
 	def _load_config(self):
@@ -119,8 +109,8 @@ class Arduino(object):
 	def sketch(self, sketch):
 		self.add_generator(self._find_sources(self.src_dir))
 		elf = self.env.Program(sketch+'.elf', self.objects)
-		eep = self.env.Eep(sketch+'.eep', elf)
-		hex = self.env.Hex(sketch+'.hex', elf)
+		eep = self.env.Command(sketch+'.eep', elf, '$OBJCOPY -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $SOURCE $TARGET')
+		hex = self.env.Command(sketch+'.hex', elf, '$OBJCOPY -O ihex -R .eeprom $SOURCE $TARGET')
 		print self.env['OBJCOPY']
 		self.env.Default(hex, eep)
 		self.env.Alias('upload', self.env.Command(None, hex, self.upload_command()))
