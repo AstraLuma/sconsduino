@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from . import Arduino
+import subprocess
 class Teensy3(Arduino):
 	"""
 	A Teensy3 or 3.1 board.
@@ -57,8 +58,8 @@ class Teensy3(Arduino):
 			CPPDEFINES={'LAYOUT_'+layout: ''}
 		)
 
-	def upload_command(self, target, source, env):
-		return "{LOAD} -mmcu={MCU} {LOADFLAGS} {}".format(src, LOAD=env['LOAD'], MCU=env['MCU'], LOADFLAGS=' '.join(env['LOADFLAGS']))
+	def upload_command(self):
+		return "$LOAD -mmcu=$MCU $LOADFLAGS $SOURCE"
 
 def Teensy(*p, **kw):
 	v = kw['version']

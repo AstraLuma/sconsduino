@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import os.path
+import glob
 
 ARDUINO_VER = 105
 
 class Arduino(object):
-	def __init__(self, sketch, env, src_dir=None, build_dir=None, **kw):
+	def __init__(self, sketch, env, src_dir='.', build_dir='.', **kw):
 		self.env = env
 		self.objects = []
 		self._load_config()
@@ -27,11 +29,10 @@ class Arduino(object):
 					suffix='.hex',
 					src_suffix='.elf',
 					),
-				'Upload': self.env.Builder(action=self._write_upload_script,
-					src_suffix='.hex')
 			}
 		)
-		self.build_dir = self.env.Dir(build_dir or '.')
+		self.build_dir = self.env.Dir(build_dir)
+		self.src_dir = self.env.Dir(src_dir)
 
 	def _load_config(self):
 		# FIXME: use a real config file
@@ -75,7 +76,18 @@ class Arduino(object):
 		"""
 		Add Arduino libraries
 		"""
-		pass
+		for l in libs:
+			for s in self._find_sources(self.env['ARDUINO'], 'libraries', 'lib'):
+				self.add(s)
+			self.env.Append(CPPPATH=[os.path.join('$ARDUINO', 'libraries', 'lib')])
+
+	def _find_sources(self, *dirs, **kw):
+		exts = kw.get('exts', ['c', 'cpp'])
+		d = os.path.join(*dirs)
+		d = str(d)
+		for e in exts:
+			for fn in glob.glob(os.path.join(d, '*.'+e)):
+				yield self.env.File(fn)
 
 	def _find_tools(self, d, **kw):
 		d = str(d)
@@ -90,6 +102,11 @@ class Arduino(object):
 			if os.path.exists(os.path.join(d, f.format(t)))
 		}
 
+	def _find_core(self, core):
+		for c in self._find_sources(core):
+			self.add(c)
+
+
 	def add(self, src):
 		base, ext = os.path.splitext(os.path.basename(str(src)))
 		if ext not in ('.c', '.cpp'):
@@ -97,20 +114,9 @@ class Arduino(object):
 		self.objects += self.env.Object(self.build_dir.File(base+'.o'), src)
 
 	def sketch(self, sketch):
+		for s in self._find_sources(self.src_dir):
+			self.add(s)
 		elf = self.env.Program(sketch+'.elf', self.objects)
 		eep = self.env.Eep(sketch+'.eep', elf)
 		hex = self.env.Hex(sketch+'.hex', elf)
-		self.env.Upload('upload', hex)
-
-	def _write_upload_script(self, target, source, env):
-			for trgt, src in zip(target, source):
-				with open(unicode(trgt), 'w') as upscript:
-					upscript.write("""#!/bin/sh
-exec {}
-""".format(self.upload_command(target, source, env))
-					)
-					os.fchmod(upscript.fileno(), 0755)
-					print "Run ./{} to upload {}".format(trgt, src)
-
-	def upload_command(self, target, source, env):
-		raise NotImplementedError()
+		self.env.Alias('upload', self.env.Command(None, hex, self.upload_command()))
