@@ -16,9 +16,9 @@ class Arduino(object):
 			# C/C++
 			CCFLAGS=['-c', '-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections', '-MMD'],
 			# C only
-			CFLAGS=['-std=gnu11'],
+			CFLAGS=[],
 			# C++ only
-			CXXFLAGS=['-fno-exceptions', '-fno-rtti', '-felide-constructors', '-std=gnu++11'],
+			CXXFLAGS=['-fno-exceptions', '-fno-rtti', '-felide-constructors'],
 			LINKFLAGS=['-Os', '-Wl,--gc-sections'],
 		)
 		self.build_dir = self.env.Dir(build_dir)

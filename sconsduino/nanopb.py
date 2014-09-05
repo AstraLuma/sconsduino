@@ -5,6 +5,29 @@ Why? Because I use it.
 """
 import os.path
 
+
+"""
+Example:
+from sconsduino.teensy import Teensy
+from sconsduino.nanopb import NanoPB
+env = Environment()
+npb = NanoPB(env=env, build_dir='bin')
+
+npb.add("protocols/server.proto")
+
+teensy = Teensy(
+	version=3.1,
+	env=env,
+	build_dir='bin',
+)
+
+teensy.libs("wire", "CC3000")
+teensy.cpu(speed=96000000)
+teensy.layout('US_ENGLISH')
+teensy.add_generator(npb)
+teensy.sketch('blinky')
+"""
+
 class NanoPB(object):
 	build_dir = None
 	def __init__(self, env, defs={}, build_dir=None):

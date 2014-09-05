@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from . import Arduino
-import subprocess
+
 class Teensy3(Arduino):
 	"""
 	A Teensy3 or 3.1 board.
@@ -16,9 +16,9 @@ class Teensy3(Arduino):
 			# C/C++
 			CCFLAGS=['-mcpu=cortex-m4', '-MMD', '-mthumb', '-nostdlib'],
 			# C only
-			CFLAGS=[],
+			CFLAGS=['-std=gnu11'],
 			# C++ only
-			CXXFLAGS=[],
+			CXXFLAGS=['-std=gnu++11'],
 			LINKFLAGS=['-mcpu=cortex-m4', '-mthumb', '-T$LDSCRIPT'],
 			LIBS=['arm_cortexM4l_math', 'm'],
 			LOAD='teensy_loader_cli', # TODO: run find algorithm
@@ -67,3 +67,5 @@ def Teensy(*p, **kw):
 	v = kw['version']
 	if v in (3.0, 3.1):
 		return Teensy3(*p, **kw)
+	else:
+		raise ValueError("Unknown Teensy version: {}".format(v))
