@@ -1,0 +1,17 @@
+from sconsduino import *
+from sconsduino.nanopb import *
+env = Environment()
+npb = NanoPB(env=env)
+
+npb.add("protocols/server.proto")
+
+print(list(npb))
+
+# ardui = arduino.Teensy("blinky",
+# 	version=3.1,
+# 	srcs=[npb],
+# 	env=env
+# )
+
+# ardui.libs("wire", "CC3000")
+
