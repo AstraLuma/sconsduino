@@ -1,14 +1,19 @@
+"""
+Module to work with the NanoPB library.
+
+Why? Because I use it.
+"""
 import os.path
 
-class NanoPB:
+class NanoPB(object):
 	build_dir = None
 	def __init__(self, env, defs={}, build_dir=None):
 		self.env = env
-		print(env)
+		self.build_dir = self.env.Dir(build_dir or '.')
 		self.env.Append(
 			PROTOC='protoc',
 			NANOPB=self._findnano(),
-			CPPPATH=['$NANOPB'],
+			CPPPATH=['$NANOPB', self.build_dir],
 			CPPDEFINES=defs,
 			PROTOPATH='-Iprotocols',
 			BUILDERS={
@@ -18,8 +23,6 @@ class NanoPB:
 					),
 			}
 		)
-		if build_dir is not None:
-			self.build_dir = self.env.Dir(build_dir)
 		self.objects = []
 
 	def _findnano(self):
@@ -34,12 +37,8 @@ class NanoPB:
 		src = self.env.File(src)
 		fn = os.path.basename(str(src))
 		b, e = os.path.splitext(fn)
-		if self.build_dir:
-			cdest = self.build_dir.File(b+'.pb.c')
-			hdest = self.build_dir.File(b+'.pb.h')
-		else:
-			cdest = self.env.File(b+'.pb.c')
-			hdest = self.env.File(b+'.pb.h')
+		cdest = self.build_dir.File(b+'.pb.c')
+		hdest = self.build_dir.File(b+'.pb.h')
 		p = self.env.Proto([cdest, hdest], src)
 		self.objects += [o for o in p if str(o).endswith('.c')]
 

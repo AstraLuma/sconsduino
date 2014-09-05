@@ -1,17 +1,18 @@
-from sconsduino import *
-from sconsduino.nanopb import *
+from sconsduino.teensy import Teensy
+from sconsduino.nanopb import NanoPB
 env = Environment()
-npb = NanoPB(env=env)
+npb = NanoPB(env=env, build_dir='bin')
 
 npb.add("protocols/server.proto")
 
-print(list(npb))
+teensy = Teensy(
+	version=3.1,
+	env=env,
+	build_dir='bin',
+)
 
-# ardui = arduino.Teensy("blinky",
-# 	version=3.1,
-# 	srcs=[npb],
-# 	env=env
-# )
-
-# ardui.libs("wire", "CC3000")
-
+teensy.libs("wire", "CC3000")
+teensy.cpu(speed=96000000)
+teensy.layout('US_ENGLISH')
+teensy.add_generator(npb)
+teensy.sketch('blinky')
