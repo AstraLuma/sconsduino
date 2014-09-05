@@ -39,6 +39,7 @@ class Teensy3(Arduino):
 				LDSCRIPT = self.env['COREPATH'].File('mk20dx256.ld'),
 				MCU='mk20dx256',
 			)
+		self._find_core(self.env['COREPATH'])
 
 	def usb_mode(self, mode):
 		"""

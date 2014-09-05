@@ -106,7 +106,6 @@ class Arduino(object):
 		for c in self._find_sources(core):
 			self.add(c)
 
-
 	def add(self, src):
 		base, ext = os.path.splitext(os.path.basename(str(src)))
 		if ext not in ('.c', '.cpp'):
@@ -119,4 +118,6 @@ class Arduino(object):
 		elf = self.env.Program(sketch+'.elf', self.objects)
 		eep = self.env.Eep(sketch+'.eep', elf)
 		hex = self.env.Hex(sketch+'.hex', elf)
+		print self.env['OBJCOPY']
+		self.env.Default(hex)
 		self.env.Alias('upload', self.env.Command(None, hex, self.upload_command()))
