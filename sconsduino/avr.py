@@ -352,5 +352,5 @@ class Atmega328(Arduino):
 		return _FuseManager(self)
 
 	def upload_command(self):
-		#FIXME: Figure this out
-		return "false"
+		#FIXME: Make serial port configurable
+		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -patmega328p -cstk500v1 -P/dev/ttyACM0 -b19200 -Uflash:w:$SOURCE:i"
