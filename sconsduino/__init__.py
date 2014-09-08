@@ -9,9 +9,11 @@ class Arduino(object):
 		self.env = env
 		self.objects = []
 		self._load_config()
+		self.build_dir = self.env.Dir(build_dir)
+		self.src_dir = self.env.Dir(src_dir)
 		self.env.Append(
 			ARDUINO=self.config['ARDUINO_DIR'],
-			CPPPATH = [],
+			CPPPATH = [self.src_dir],
 			CPPDEFINES = {'ARDUINO': ARDUINO_VER},
 			# C/C++
 			CCFLAGS=['-c', '-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections', '-MMD'],
@@ -21,8 +23,6 @@ class Arduino(object):
 			CXXFLAGS=['-fno-exceptions', '-fno-rtti', '-felide-constructors'],
 			LINKFLAGS=['-Os', '-Wl,--gc-sections'],
 		)
-		self.build_dir = self.env.Dir(build_dir)
-		self.src_dir = self.env.Dir(src_dir)
 	def _finish_init(self):
 		"""
 		MUST be called after all the bits have been defined.
