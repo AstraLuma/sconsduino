@@ -1,26 +1,249 @@
 from __future__ import absolute_import
 from . import Arduino
 
+class _FuseManager(object):
+	"""
+	Exposes fuse settings.
+
+	Note that this currently forces values for RSDISBL and SPIEN, just because this is a Really Bad Idea for me.
+	"""
+	"""
+	For all fuses “1” means unprogrammed while “0” means programmed.
+	"""
+	# http://www.engbedded.com/fusecalc/
+	def __init__(self, parent):
+		self._parent = parent
+		## Set registers to default ##
+		# Reset pin disabled
+		self.RSDISBL = 1
+
+		# Clock select and startup time
+		self.CLKSEL = 0b0010
+		self.CKDIV8 = 0
+		self.SUT = 0b10
+		self.CKOUT = 1 # Pump out the scaled clock
+		self.BODLEVEL = 0b111 # Brown-out levels
+
+		# Bootloader options
+		self.BOOTSZ = 0b00
+		self.BOOTRST = 1
+
+		# EEPROM is preserved through chip erase cycles
+		self.EESAVE = 1
+		
+		# Watch dog timer on
+		self.WDTON = 1
+
+		# Allow SPI for programming
+		self.SPIEN = 0
+
+		# debugWIRE
+		self.DWEN = 1
+
+	def __enter__(self):
+		return self
+
+	def __exit__(self, t, v, tb):
+		if t is None:
+			self._parent.fuses = self.fuses()
+
+	def fuses(self):
+		ext = (self.BODLEVEL & 0b111) # Table 28-6
+		# First constant hard-codes RSTDISBL, DWEN, and SPIEN (so we don't brick our chip)
+		high = (0b11100000) | ((self.WDTON & 1) << 4) | ((self.EESAVE & 1) << 3) | ((self.BOOTSZ & 0b11) << 1) | (self.BOOTRST & 1) # Table 28-8
+		low = ((self.CKDIV8 & 1) << 7) | ((self.CKOUT & 1) << 6) | ((self.SUT & 0b11) << 4) | (self.CLKSEL & 0b1111) # Table 28-9
+		return low, high, ext
+
+	def clock(self, src, speed=None):
+		"""
+		src - One of lpco, fsco, lfco, intern128, internal, external
+		speed - Speed in MHz (if applicable)
+		"""
+		"""
+		(9-1)
+		Low Power Crystal Oscillator      1111 - 1000
+		Full Swing Crystal Oscillator     0111 - 0110
+		Low Frequency Crystal Oscillator  0101 - 0100
+		Internal 128kHz RC Oscillator     0011
+		Calibrated Internal RC Oscillator 0010
+		External Clock                    0000
+
+
+		Low Power Crystal Oscillator Operating Modes (9-3)
+		0.4 -  0.9 MHz  100
+		0.9 -  3.0 MHz  101
+		3.0 -  8.0 MHz  110
+		8.0 - 16.0 MHz  111
+
+
+		Full Swing Crystal Oscillator (9-5)
+		0.4 - 20 MHz  011
+		
+		Internal Calibrated RC Oscillator Operating Modes (9-11)
+		7.3 - 8.1 MHz  0010
+		
+		128kHz Internal Oscillator Operating Modes (9-13)
+		128kHz  0011
+
+		External Clock Frequency (9-15)
+		0 - 20 MHz  0000
+		"""
+		if src == 'lpco':
+			if 0.4 <= speed < 0.9:
+				v = 0b1000
+			elif 0.9 <= speed < 3.0:
+				v = 0b1010
+			elif 3.0 <= speed < 8.0:
+				v = 0b1010
+			elif 8.0 <= speed < 16:
+				v = 0b1010
+			else:
+				raise ValueError("Unknown value for speed: {:r}".format(speed))
+			self.CLKSEL = v | (self.CLKSEL & 1)
+		elif src == 'fsco':
+			self.CLKSEL = 0b0110 | (self.CLKSEL & 1)
+		elif src == 'lfco':
+			self.CLKSEL = 0b0100 | (self.CLKSEL & 1)
+		elif src == 'intern128':
+			self.CLKSEL = 0b0011
+		elif src == 'internal':
+			self.CLKSEL = 0b0010
+		elif src == 'external':
+			self.CLKSEL = 0b0000
+		else:
+			raise ValueError("Unknown value for src: {:r}".format(src))
+
+	def startup(self, kind, delay):
+		"""
+		Must be called after clock()
+		kind - one of fast, slow, bod
+		delay - one of 0, 4.1, 65
+		"""
+		"""
+		Start-up Times for the Low Power Crystal Oscillator Clock Selection (9-4)
+		Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00 
+		Ceramic resonator, slowly rising power  258 CK  14CK + 65ms  0 01
+
+		Ceramic resonator, BOD enabled          1K CK   14CK         0 10
+		Ceramic resonator, fast rising power    1K CK   14CK + 4.1ms 0 11
+		Ceramic resonator, slowly rising power  1K CK   14CK + 65ms  1 00
+
+		Crystal Oscillator, BOD enabled         16K CK  14CK         1 01 
+		Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10 
+		Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
+
+
+		Start-up Times for the Full Swing Crystal Oscillator Clock Selection (9-6)
+		Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00
+		Ceramic resonator, slowly rising power  258 CK  14CK + 65ms  0 01
+
+		Ceramic resonator, BOD enabled          1K CK   14CK         0 10
+		Ceramic resonator, fast rising power    1K CK   14CK + 4.1ms 0 11
+		Ceramic resonator, slowly rising power  1K CK   14CK + 65ms  1 00
+
+		Crystal Oscillator, BOD enabled         16K CK  14CK         1 01
+		Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10
+		Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
+
+
+		Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-9)
+		00  4 CK         Fast rising power or BOD enabled
+		01  4 CK + 4.1ms Slowly rising power
+		10  4 CK + 65ms  Stable frequency at start-up
+
+		Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-10)
+		0100  1K CK
+		0101  32K CK  Stable frequency at start-up
+		
+		Start-up times for the internal calibrated RC Oscillator clock selection (9-12)
+		BOD enabled         6 CK  14CK          00
+		Fast rising power   6 CK  14CK + 4.1ms  01
+		Slowly rising power 6 CK  14CK + 65ms   10
+
+		Start-up Times for the 128kHz Internal Oscillator (9-14)
+		BOD enabled         6 CK  14CK        00
+		Fast rising power   6 CK  14CK + 4ms  01
+		Slowly rising power 6 CK  14CK + 64ms 10
+
+		Start-up Times for the External Clock Selection (9-16)
+		BOD enabled         6 CK  14CK         00
+		Fast rising power   6 CK  14CK + 4.1ms 01
+		Slowly rising power 6 CK  14CK + 65ms  10
+		"""
+		if 
+
+	def brownout(self, V):
+		"""
+		BODLEVEL Fuse Coding (29-17)
+		111  BOD Disabled
+		110  1.7-2.0V  1.8V
+		101  2.5-2.9V  2.7V
+		100  4.1-4.3V  4.5V
+		"""
+		VALUES = {
+			None: 0b111,
+			2.0: 0b110,
+			2.9: 0b101,
+			4.5: 0b100,
+		}
+		self.BODLEVEL = VALUES[V]
+
+
+	def watchdog(self, on):
+		"""
+		Enable the Watchdog Timer in fuses.
+
+		NOTE: This forces the WDT to reset the chip, interrupt mode is disabled.
+		"""
+		self.WDTON = 0 if on else 1
+
+	def bootloader(self, size):
+		""
+		"""
+		Boot Size Configuration, ATmega328/328P (27-13)
+		11  256 words   4  0x0000 - 0x3EFF  0x3F00 - 0x3FFF  0x3EFF  0x3F00
+		10  512 words   8  0x0000 - 0x3DFF  0x3E00 - 0x3FFF  0x3DFF  0x3E00
+		01 1024 words  16  0x0000 - 0x3BFF  0x3C00 - 0x3FFF  0x3BFF  0x3C00
+		00 2048 words  32  0x0000 - 0x37FF  0x3800 - 0x3FFF  0x37FF  0x3800
+		"""
+		SIZES = {
+			256: 0b11,
+			512: 0b10,
+			1024: 0b01,
+			2048: 0b00,
+		}
+		if size is None:
+			self.BOOTRST = 1
+		else:
+			self.BOOTRST = 0
+			self.BOOTSZ = SIZES[size]
+
+	def debugWIRE(self, on):
+		self.DWEN = 0 if on else 1
+
 class Atmega328(Arduino):
 	"""
 	A bare ATMEGA328
+
+	Supported chips: ATmega328/P
 	"""
 
 	def __init__(self, *p, **kw):
 		super(Atmega328, self).__init__(self, *p, **kw)
+		self.partno = kw['partno']
 		self.env.Append(
 			COREPATH=self.env.Dir("$ARDUINO").Dir('hardware').Dir('arduino').Dir('cores').Dir('arduino'),
 			CPPPATH=['$COREPATH', self.env.Dir("$ARDUINO").Dir("hardware").Dir("arduino").Dir("variants").Dir("standard")],
 			CPPDEFINES={'TEENSYDUINO': 118},
 			# C/C++
-			CCFLAGS=['-mmcu=atmega328p'],
+			CCFLAGS=['-mmcu='+self.partno],
 			# C only
 			CFLAGS=[],
 			# C++ only
 			CXXFLAGS=[],
-			LINKFLAGS=['-mmcu=atmega328p'],
+			LINKFLAGS=['-mmcu='+self.partno],
 			LIBS=['m'],
-			LOAD='avrdude',
+			LOAD='avrdude', # /home/james/.local/arduino/hardware/tools/avrdude -C$(ARDUINO)/hardware/tools/avrdude.conf -patmega328p -cstk500v1 -P$(SER) -b19200 -Uflash:w:$<.hex:i 
 			LOADFLAGS=[],
 		)
 		self.env.Replace(
@@ -28,6 +251,9 @@ class Atmega328(Arduino):
 		)
 		self._find_core(self.env['COREPATH'])
 		self._finish_init()
+
+	def fuses(self):
+		return _FuseManager(self)
 
 	def upload_command(self):
 		#FIXME: Figure this out
