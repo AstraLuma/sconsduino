@@ -18,7 +18,7 @@ class _FuseManager(object):
 		self.RSDISBL = 1
 
 		# Clock select and startup time
-		self.CLKSEL = 0b0010
+		self.CKSEL = 0b0010
 		self.CKDIV8 = 0
 		self.SUT = 0b10
 		self.CKOUT = 1 # Pump out the scaled clock
@@ -51,7 +51,7 @@ class _FuseManager(object):
 		ext = (self.BODLEVEL & 0b111) # Table 28-6
 		# First constant hard-codes RSTDISBL, DWEN, and SPIEN (so we don't brick our chip)
 		high = (0b11100000) | ((self.WDTON & 1) << 4) | ((self.EESAVE & 1) << 3) | ((self.BOOTSZ & 0b11) << 1) | (self.BOOTRST & 1) # Table 28-8
-		low = ((self.CKDIV8 & 1) << 7) | ((self.CKOUT & 1) << 6) | ((self.SUT & 0b11) << 4) | (self.CLKSEL & 0b1111) # Table 28-9
+		low = ((self.CKDIV8 & 1) << 7) | ((self.CKOUT & 1) << 6) | ((self.SUT & 0b11) << 4) | (self.CKSEL & 0b1111) # Table 28-9
 		return low, high, ext
 
 	def clock(self, src, speed=None):
@@ -94,31 +94,34 @@ class _FuseManager(object):
 			elif 0.9 <= speed < 3.0:
 				v = 0b1010
 			elif 3.0 <= speed < 8.0:
-				v = 0b1010
+				v = 0b1100
 			elif 8.0 <= speed < 16:
-				v = 0b1010
+				v = 0b1110
 			else:
 				raise ValueError("Unknown value for speed: {:r}".format(speed))
-			self.CLKSEL = v | (self.CLKSEL & 1)
+			self.CKSEL = v | (self.CKSEL & 1)
 		elif src == 'fsco':
-			self.CLKSEL = 0b0110 | (self.CLKSEL & 1)
+			self.CKSEL = 0b0110 | (self.CKSEL & 1)
 		elif src == 'lfco':
-			self.CLKSEL = 0b0100 | (self.CLKSEL & 1)
+			self.CKSEL = 0b0100 | (self.CKSEL & 1)
 		elif src == 'intern128':
-			self.CLKSEL = 0b0011
+			self.CKSEL = 0b0011
 		elif src == 'internal':
-			self.CLKSEL = 0b0010
+			self.CKSEL = 0b0010
 		elif src == 'external':
-			self.CLKSEL = 0b0000
+			self.CKSEL = 0b0000
 		else:
 			raise ValueError("Unknown value for src: {:r}".format(src))
 
-	def startup(self, kind, delay):
+	def startup(self, kind, type=None, borderline=False):
 		"""
 		Must be called after clock()
 		kind - one of fast, slow, bod
-		delay - one of 0, 4.1, 65
+		type - one of ceramic, crystal (if applicable)
+		borderline - if True, use ultra-fast start times (ceramic only, see footnotes in datasheet)
 		"""
+		src = self.CKSEL & 0b1110
+
 		"""
 		Start-up Times for the Low Power Crystal Oscillator Clock Selection (9-4)
 		Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00 
@@ -131,8 +134,36 @@ class _FuseManager(object):
 		Crystal Oscillator, BOD enabled         16K CK  14CK         1 01 
 		Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10 
 		Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
+		"""
+		if src in (0b1000, 0b1010, 0b1100, 0b1110): # LPCO
+			if kind == 'fast' and type == 'ceramic' and borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b00
+			elif kind == 'slow' and type == 'ceramic' and borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b01
+			elif kind == 'bod' and type == 'ceramic' and not borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b10
+			elif kind == 'fast' and type == 'ceramic' and not borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b11
+			elif kind == 'slow' and type == 'ceramic' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b00
+			elif kind == 'bod' and type == 'crystal' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b01
+			elif kind == 'fast' and type == 'crystal' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b10
+			elif kind == 'slow' and type == 'crystal' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b11
+			else:
+				raise ValueError("Invalid configuration for Low Power Crystal Oscillator: {} {} {}".format (kind, type, borderline))
 
-
+		"""
 		Start-up Times for the Full Swing Crystal Oscillator Clock Selection (9-6)
 		Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00
 		Ceramic resonator, slowly rising power  258 CK  14CK + 65ms  0 01
@@ -144,33 +175,98 @@ class _FuseManager(object):
 		Crystal Oscillator, BOD enabled         16K CK  14CK         1 01
 		Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10
 		Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
+		"""
+		elif src == 0b0110: # FSCO
+			if type == 'ceramic' and kind == 'fast' and borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b00
+			elif type == 'ceramic' and kind == 'slow' and borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b01
+			elif type == 'ceramic' and kind == 'bod' and not borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b10
+			elif type == 'ceramic' and kind == 'fast' and not borderline:
+				self.CKSEL = src | 0
+				self.SUT = 0b11
+			elif type == 'ceramic' and kind == 'slow' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b00
+			elif type == 'crystal' and kind == 'bod' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b01
+			elif type == 'crystal' and kind == 'fast' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b10
+			elif type == 'crystal' and kind == 'slow' and not borderline:
+				self.CKSEL = src | 1
+				self.SUT = 0b11
+			else:
+				raise ValueError("Invalid configuration for Full Swing Crystal Oscillator: {} {} {}".format (kind, type, borderline))
 
-
+		"""
 		Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-9)
 		00  4 CK         Fast rising power or BOD enabled
 		01  4 CK + 4.1ms Slowly rising power
 		10  4 CK + 65ms  Stable frequency at start-up
 
-		Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-10)
+ 		Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-10)
 		0100  1K CK
 		0101  32K CK  Stable frequency at start-up
-		
+		"""
+		elif src == 0b0110: # LFCO
+			raise NotImplementedError("Too complicated! Ahh!")
+
+
+		"""
 		Start-up times for the internal calibrated RC Oscillator clock selection (9-12)
 		BOD enabled         6 CK  14CK          00
 		Fast rising power   6 CK  14CK + 4.1ms  01
 		Slowly rising power 6 CK  14CK + 65ms   10
+		"""
+		elif self.CKSEL == 0b0010:
+			if kind == 'bod':
+				self.SUT = 0b00
+			elif kind == 'fast':
+				self.SUT = 0b01
+			elif kind == 'slow':
+				self.SUT = 0b10
+			else:
+				raise ValueError("Invalid configuration for internal calibrated RC oscillator clock: {} {} {}".format (kind, type, borderline))
 
+		"""
 		Start-up Times for the 128kHz Internal Oscillator (9-14)
 		BOD enabled         6 CK  14CK        00
 		Fast rising power   6 CK  14CK + 4ms  01
 		Slowly rising power 6 CK  14CK + 64ms 10
+		"""
+		elif self.CKSEL == 0b0011:
+			if kind == 'bod':
+				self.SUT = 0b00
+			elif kind == 'fast':
+				self.SUT = 0b01
+			elif kind == 'slow':
+				self.SUT = 0b10
+			else:
+				raise ValueError("Invalid configuration for 128kHz internal RC oscillator: {} {} {}".format (kind, type, borderline))
 
+
+		"""
 		Start-up Times for the External Clock Selection (9-16)
 		BOD enabled         6 CK  14CK         00
 		Fast rising power   6 CK  14CK + 4.1ms 01
 		Slowly rising power 6 CK  14CK + 65ms  10
 		"""
-		if 
+		elif self.CKSEL == 0b0000:
+			if kind == 'bod':
+				self.SUT = 0b00
+			elif kind == 'fast':
+				self.SUT = 0b01
+			elif kind == 'slow':
+				self.SUT = 0b10
+			else:
+				raise ValueError("Invalid configuration for external clock: {} {} {}".format (kind, type, borderline))
+
 
 	def brownout(self, V):
 		"""
