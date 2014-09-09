@@ -57,7 +57,7 @@ class Arduino(object):
 		Configure CPU settings, namely speed
 		"""
 		self.env.Append(
-			CPPDEFINES = {'F_CPU': speed}
+			CPPDEFINES = {'F_CPU': int(speed)}
 		)
 
 	def usb(self, vid, pid):

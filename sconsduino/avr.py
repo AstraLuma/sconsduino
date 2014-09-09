@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from . import Arduino
 
@@ -45,16 +46,18 @@ class _FuseManager(object):
 
 	def __exit__(self, t, v, tb):
 		if t is None:
-			self._parent.fuses = self.fuses()
+			f = self.fuses()
+			print("Fuses: l:{:02X} h:{:02X} e:{:02X}".format(*f))
+			self._parent.fuses = f
 
 	def fuses(self):
 		ext = (self.BODLEVEL & 0b111) # Table 28-6
 		# First constant hard-codes RSTDISBL, DWEN, and SPIEN (so we don't brick our chip)
-		high = (0b11100000) | ((self.WDTON & 1) << 4) | ((self.EESAVE & 1) << 3) | ((self.BOOTSZ & 0b11) << 1) | (self.BOOTRST & 1) # Table 28-8
+		high = (0b11000000) | ((self.WDTON & 1) << 4) | ((self.EESAVE & 1) << 3) | ((self.BOOTSZ & 0b11) << 1) | (self.BOOTRST & 1) # Table 28-8
 		low = ((self.CKDIV8 & 1) << 7) | ((self.CKOUT & 1) << 6) | ((self.SUT & 0b11) << 4) | (self.CKSEL & 0b1111) # Table 28-9
 		return low, high, ext
 
-	def clock(self, src, speed=None):
+	def clock(self, src, speed=None, div=True):
 		"""
 		src - One of lpco, fsco, lfco, intern128, internal, external
 		speed - Speed in MHz (if applicable)
@@ -88,6 +91,7 @@ class _FuseManager(object):
 		External Clock Frequency (9-15)
 		0 - 20 MHz  0000
 		"""
+		self.CKDIV8 = 0 if div else 1
 		if src == 'lpco':
 			if 0.4 <= speed < 0.9:
 				v = 0b1000
@@ -106,12 +110,17 @@ class _FuseManager(object):
 			self.CKSEL = 0b0100 | (self.CKSEL & 1)
 		elif src == 'intern128':
 			self.CKSEL = 0b0011
+			speed = 0.128
 		elif src == 'internal':
 			self.CKSEL = 0b0010
+			speed = 8.0
 		elif src == 'external':
 			self.CKSEL = 0b0000
 		else:
 			raise ValueError("Unknown value for src: {:r}".format(src))
+
+		if speed is not None:
+			self._parent.cpu(speed*1000000 / (8 if div else 1))
 
 	def startup(self, kind, type=None, borderline=False):
 		"""
@@ -122,19 +131,17 @@ class _FuseManager(object):
 		"""
 		src = self.CKSEL & 0b1110
 
-		"""
-		Start-up Times for the Low Power Crystal Oscillator Clock Selection (9-4)
-		Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00 
-		Ceramic resonator, slowly rising power  258 CK  14CK + 65ms  0 01
+		# Start-up Times for the Low Power Crystal Oscillator Clock Selection (9-4)
+		# Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00 
+		# Ceramic resonator, slowly rising power  258 CK  14CK + 65ms  0 01
 
-		Ceramic resonator, BOD enabled          1K CK   14CK         0 10
-		Ceramic resonator, fast rising power    1K CK   14CK + 4.1ms 0 11
-		Ceramic resonator, slowly rising power  1K CK   14CK + 65ms  1 00
+		# Ceramic resonator, BOD enabled          1K CK   14CK         0 10
+		# Ceramic resonator, fast rising power    1K CK   14CK + 4.1ms 0 11
+		# Ceramic resonator, slowly rising power  1K CK   14CK + 65ms  1 00
 
-		Crystal Oscillator, BOD enabled         16K CK  14CK         1 01 
-		Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10 
-		Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
-		"""
+		# Crystal Oscillator, BOD enabled         16K CK  14CK         1 01 
+		# Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10 
+		# Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
 		if src in (0b1000, 0b1010, 0b1100, 0b1110): # LPCO
 			if kind == 'fast' and type == 'ceramic' and borderline:
 				self.CKSEL = src | 0
@@ -163,19 +170,17 @@ class _FuseManager(object):
 			else:
 				raise ValueError("Invalid configuration for Low Power Crystal Oscillator: {} {} {}".format (kind, type, borderline))
 
-		"""
-		Start-up Times for the Full Swing Crystal Oscillator Clock Selection (9-6)
-		Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00
-		Ceramic resonator, slowly rising power  258 CK  14CK + 65ms  0 01
+		# Start-up Times for the Full Swing Crystal Oscillator Clock Selection (9-6)
+		# Ceramic resonator, fast rising power    258 CK  14CK + 4.1ms 0 00
+		# Ceramic resonator, slowly rising power  258 CK  14CK + 65ms  0 01
 
-		Ceramic resonator, BOD enabled          1K CK   14CK         0 10
-		Ceramic resonator, fast rising power    1K CK   14CK + 4.1ms 0 11
-		Ceramic resonator, slowly rising power  1K CK   14CK + 65ms  1 00
+		# Ceramic resonator, BOD enabled          1K CK   14CK         0 10
+		# Ceramic resonator, fast rising power    1K CK   14CK + 4.1ms 0 11
+		# Ceramic resonator, slowly rising power  1K CK   14CK + 65ms  1 00
 
-		Crystal Oscillator, BOD enabled         16K CK  14CK         1 01
-		Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10
-		Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
-		"""
+		# Crystal Oscillator, BOD enabled         16K CK  14CK         1 01
+		# Crystal Oscillator, fast rising power   16K CK  14CK + 4.1ms 1 10
+		# Crystal Oscillator, slowly rising power 16K CK  14CK + 65ms  1 11
 		elif src == 0b0110: # FSCO
 			if type == 'ceramic' and kind == 'fast' and borderline:
 				self.CKSEL = src | 0
@@ -204,26 +209,22 @@ class _FuseManager(object):
 			else:
 				raise ValueError("Invalid configuration for Full Swing Crystal Oscillator: {} {} {}".format (kind, type, borderline))
 
-		"""
-		Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-9)
-		00  4 CK         Fast rising power or BOD enabled
-		01  4 CK + 4.1ms Slowly rising power
-		10  4 CK + 65ms  Stable frequency at start-up
+		# Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-9)
+		# 00  4 CK         Fast rising power or BOD enabled
+		# 01  4 CK + 4.1ms Slowly rising power
+		# 10  4 CK + 65ms  Stable frequency at start-up
 
- 		Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-10)
-		0100  1K CK
-		0101  32K CK  Stable frequency at start-up
-		"""
+		# Start-up Times for the Low-frequency Crystal Oscillator Clock Selection (9-10)
+		# 0100  1K CK
+		# 0101  32K CK  Stable frequency at start-up
 		elif src == 0b0110: # LFCO
 			raise NotImplementedError("Too complicated! Ahh!")
 
 
-		"""
-		Start-up times for the internal calibrated RC Oscillator clock selection (9-12)
-		BOD enabled         6 CK  14CK          00
-		Fast rising power   6 CK  14CK + 4.1ms  01
-		Slowly rising power 6 CK  14CK + 65ms   10
-		"""
+		# Start-up times for the internal calibrated RC Oscillator clock selection (9-12)
+		# BOD enabled         6 CK  14CK          00
+		# Fast rising power   6 CK  14CK + 4.1ms  01
+		# Slowly rising power 6 CK  14CK + 65ms   10
 		elif self.CKSEL == 0b0010:
 			if kind == 'bod':
 				self.SUT = 0b00
@@ -234,12 +235,10 @@ class _FuseManager(object):
 			else:
 				raise ValueError("Invalid configuration for internal calibrated RC oscillator clock: {} {} {}".format (kind, type, borderline))
 
-		"""
-		Start-up Times for the 128kHz Internal Oscillator (9-14)
-		BOD enabled         6 CK  14CK        00
-		Fast rising power   6 CK  14CK + 4ms  01
-		Slowly rising power 6 CK  14CK + 64ms 10
-		"""
+		# Start-up Times for the 128kHz Internal Oscillator (9-14)
+		# BOD enabled         6 CK  14CK        00
+		# Fast rising power   6 CK  14CK + 4ms  01
+		# Slowly rising power 6 CK  14CK + 64ms 10
 		elif self.CKSEL == 0b0011:
 			if kind == 'bod':
 				self.SUT = 0b00
@@ -251,12 +250,10 @@ class _FuseManager(object):
 				raise ValueError("Invalid configuration for 128kHz internal RC oscillator: {} {} {}".format (kind, type, borderline))
 
 
-		"""
-		Start-up Times for the External Clock Selection (9-16)
-		BOD enabled         6 CK  14CK         00
-		Fast rising power   6 CK  14CK + 4.1ms 01
-		Slowly rising power 6 CK  14CK + 65ms  10
-		"""
+		# Start-up Times for the External Clock Selection (9-16)
+		# BOD enabled         6 CK  14CK         00
+		# Fast rising power   6 CK  14CK + 4.1ms 01
+		# Slowly rising power 6 CK  14CK + 65ms  10
 		elif self.CKSEL == 0b0000:
 			if kind == 'bod':
 				self.SUT = 0b00
@@ -292,6 +289,12 @@ class _FuseManager(object):
 		NOTE: This forces the WDT to reset the chip, interrupt mode is disabled.
 		"""
 		self.WDTON = 0 if on else 1
+
+	def eesave(self, on):
+		"""
+		Save EEPROM across chip resets.
+		"""
+		self.EESAVE = 0 if on else 1
 
 	def bootloader(self, size):
 		""

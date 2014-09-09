@@ -1,0 +1,19 @@
+from sconsduino.avr import Atmega328
+
+env = Environment()
+
+mcu = Atmega328(
+	partno='atmega328p',
+	env=env,
+	build_dir='bin',
+)
+
+with mcu.fuses() as f:
+	f.clock('internal')
+	f.startup('bod')
+	f.brownout(V=2.9)
+	f.watchdog(False)
+	f.bootloader(None)
+	f.eesave(True)
+
+mcu.sketch('blinky')
