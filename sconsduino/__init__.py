@@ -84,6 +84,7 @@ class Arduino(object):
 		exts = kw.get('exts', ['c', 'cpp'])
 		d = os.path.join(*dirs)
 		d = str(d)
+		print "Searching {} for sources...".format(d)
 		for e in exts:
 			for fn in glob.glob(os.path.join(d, '*.'+e)):
 				yield self.env.File(fn)
