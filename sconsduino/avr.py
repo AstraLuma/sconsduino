@@ -110,10 +110,12 @@ class _FuseManager(object):
 			self.CKSEL = 0b0100 | (self.CKSEL & 1)
 		elif src == 'intern128':
 			self.CKSEL = 0b0011
-			speed = 0.128
+			if speed is None:
+				speed = 0.128
 		elif src == 'internal':
 			self.CKSEL = 0b0010
-			speed = 8.0
+			if speed is None:
+				speed = 7.7 # Mean of 7.3-8.1
 		elif src == 'external':
 			self.CKSEL = 0b0000
 		else:
