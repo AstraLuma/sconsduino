@@ -356,4 +356,7 @@ class Atmega328(Arduino):
 
 	def upload_command(self):
 		#FIXME: Make serial port configurable
+		f = ""
+		if hasattr(self, 'fuses'):
+			f = "-Ulfuse:w:0xff:m -Uhfuse:w:0xde:m -Uefuse:w:0x05:m"
 		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -patmega328p -cstk500v1 -P/dev/ttyACM0 -b19200 -Uflash:w:$SOURCE:i"

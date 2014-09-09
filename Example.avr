@@ -5,7 +5,7 @@ env = Environment()
 mcu = Atmega328(
 	partno='atmega328p',
 	env=env,
-	build_dir='bin',
+	build_dir='/tmp/build',
 )
 
 with mcu.fuses() as f:
