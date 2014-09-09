@@ -94,7 +94,7 @@ class _FuseManager(object):
 		External Clock Frequency (9-15)
 		0 - 20 MHz  0000
 		"""
-		self.CKDIV8 = 0 if div else 1
+		self.CKDIV8 = 0 if div else 1  # Might not be allowed with Arduino
 		if src == 'lpco':
 			if 0.4 <= speed < 0.9:
 				v = 0b1000
@@ -125,7 +125,13 @@ class _FuseManager(object):
 			raise ValueError("Unknown value for src: {:r}".format(src))
 
 		if speed is not None:
-			self._parent.cpu(speed*1000000 / (8 if div else 1))
+			print "CKDIV8", self.CKDIV8, div
+			if self.CKDIV8: # 1== Do not divide by 8
+				print "WARNING: Disabling CKDIV8 is unsupported"
+				hz = speed*1000000*10
+			else:
+				hz = speed*1000000*10 / 8
+			self._parent.cpu(hz)
 
 	def startup(self, kind, type=None, borderline=False):
 		"""
