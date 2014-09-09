@@ -96,7 +96,7 @@ class Arduino(object):
 				_, ext = os.path.splitext(fn)
 				ffn = os.path.join(d, fn)
 				if ext in exts:
-					print ffn
+					#print ffn
 					yield self.env.File(ffn)
 
 	def _find_tools(self, d, **kw):
