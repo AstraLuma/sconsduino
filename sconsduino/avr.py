@@ -14,6 +14,7 @@ class _FuseManager(object):
 	For all fuses “1” means unprogrammed while “0” means programmed.
 	"""
 	# http://www.engbedded.com/fusecalc/
+	# http://eleccelerator.com/fusecalc/fusecalc.php?chip=atmega328p
 	def __init__(self, parent):
 		self._parent = parent
 		## Set registers to default ##

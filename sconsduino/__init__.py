@@ -85,13 +85,19 @@ class Arduino(object):
 				self.env.Append(CPPPATH=[os.path.join('$ARDUINO', 'libraries', l)])
 
 	def _find_sources(self, *dirs, **kw):
-		exts = kw.get('exts', ['c', 'cpp'])
+		exts = kw.get('exts', ['.c', '.cpp'])
 		d = os.path.join(*dirs)
 		d = str(d)
 		print "Searching {} for sources...".format(d)
-		for e in exts:
-			for fn in glob.glob(os.path.join(d, '*.'+e)):
-				yield self.env.File(fn)
+		for d, dns, fns in os.walk(d):
+			if 'examples' in dns:
+				dns.remove('examples')
+			for fn in fns:
+				_, ext = os.path.splitext(fn)
+				ffn = os.path.join(d, fn)
+				if ext in exts:
+					print ffn
+					yield self.env.File(ffn)
 
 	def _find_tools(self, d, **kw):
 		d = str(d)
