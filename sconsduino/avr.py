@@ -130,7 +130,7 @@ class _FuseManager(object):
 				print "WARNING: Disabling CKDIV8 is unsupported"
 				hz = speed*1000000*10
 			else:
-				hz = speed*1000000*10 / 8
+				hz = speed*1000000*20 / 8  # the *20 was found experimentally. No idea why.
 			self._parent.cpu(hz)
 
 	def startup(self, kind, type=None, borderline=False):
