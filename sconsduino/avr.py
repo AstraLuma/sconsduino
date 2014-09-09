@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from . import Arduino
+import os
+import stat
 
 class _FuseManager(object):
 	"""
@@ -356,9 +358,20 @@ class Atmega328(Arduino):
 	def fuses(self):
 		return _FuseManager(self)
 
+	def default_config(self):
+		d = super(Atmega328, self).default_config()
+		d.update(
+			SERIAL_PORT = '/dev/ttyACM0',
+		)
+		return d
+
+	def verify_config(self):
+		super(Atmega328, self).verify_config()
+		if not stat.S_ISCHR(os.stat(self.config['SERIAL_PORT']).st_mode):
+			self.env.Exit("SERIAL_PORT not a character device")
+
 	def upload_command(self):
-		#FIXME: Make serial port configurable
 		f = ""
 		if hasattr(self, 'fuses'):
-			f = "-Ulfuse:w:0xff:m -Uhfuse:w:0xde:m -Uefuse:w:0x05:m"
-		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -patmega328p -cstk500v1 -P/dev/ttyACM0 -b19200 -Uflash:w:$SOURCE:i"
+			f = "-Ulfuse:w:0x{:02x}:m -Uhfuse:w:0x{:02x}:m -Uefuse:w:0x{:02x}:m".format(*self.fuses)
+		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -patmega328p -cstk500v1 -P{} -b19200 -Uflash:w:$SOURCE:i".format(self.config['SERIAL_PORT'])

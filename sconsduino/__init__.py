@@ -30,20 +30,24 @@ class Arduino(object):
 		self.env.Append(
 		)
 
+	def default_config(self):
+		return dict(
+			ARDUINO_DIR = "/usr/share/arduino",
+		)
+
+	def verify_config(self):
+		if not os.path.exists(self.config['ARDUINO_DIR']):
+			self.env.Exit("Misconfigured ARDUINO_DIR: {:r}".format(ARDUINO_DIR))
+
 	def _load_config(self):
 		# FIXME: use a real config file
-		self.config = {}
+		self.config = self.default_config()
 		try:
 			execfile(os.path.expanduser("~/.arduino-scons"), self.config)
 		except:
 			print "WARNING: Unconfigured. Using defaults..."
-			self.config = dict(
-				ARDUINO_DIR = "/usr/share/arduino",
-			)
 
-		# Verify
-		if not os.path.exists(self.config['ARDUINO_DIR']):
-			self.env.Exit("Misconfigured ARDUINO_DIR: {:r}".format(ARDUINO_DIR))
+		self.verify_config()
 
 	def add_generator(self, srcs):
 		"""
