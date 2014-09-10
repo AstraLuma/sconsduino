@@ -5,7 +5,8 @@ env = Environment()
 teensy = Teensy(
 	version=3.1,
 	env=env,
-	build_dir='bin',
+	build_dir='build',
+	src_dir='.'
 )
 
 # Set to 24000000, 48000000, or 96000000 to set CPU core speed
