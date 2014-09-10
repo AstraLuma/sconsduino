@@ -344,7 +344,6 @@ class Atmega328(Arduino):
 		self.env.Append(
 			COREPATH=self.env.Dir("$ARDUINO").Dir('hardware').Dir('arduino').Dir('cores').Dir('arduino'),
 			CPPPATH=['$COREPATH', self.env.Dir("$ARDUINO").Dir("hardware").Dir("arduino").Dir("variants").Dir("standard")],
-			CPPDEFINES={'TEENSYDUINO': 118},
 			# C/C++
 			CCFLAGS=['-mmcu='+self.partno],
 			# C only

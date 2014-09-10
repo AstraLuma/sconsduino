@@ -14,7 +14,7 @@ class Teensy3(Arduino):
 			CPPPATH=['$COREPATH'],
 			CPPDEFINES={'TEENSYDUINO': 118},
 			# C/C++
-			CCFLAGS=['-mcpu=cortex-m4', '-MMD', '-mthumb', '-nostdlib'],
+			CCFLAGS=['-mcpu=cortex-m4', '-mthumb', '-nostdlib'],
 			# C only
 			CFLAGS=['-std=gnu11'],
 			# C++ only
