@@ -1,5 +1,6 @@
 """
 This is the start of building Arduino sketches with scons. Currently, it only supports:
+
 * Teensy3 
 * Arduino ProMini
 * Bare Atmega328p (with Uno libraries).
