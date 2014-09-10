@@ -7,7 +7,7 @@ class Teensy3(Arduino):
 	"""
 
 	def __init__(self, *p, **kw):
-		super(Teensy3, self).__init__(self, *p, **kw)
+		super(Teensy3, self).__init__(*p, **kw)
 		self.version = kw.get('version')
 		self.env.Append(
 			COREPATH=self.env.Dir("$ARDUINO").Dir('hardware').Dir('teensy').Dir('cores').Dir('teensy3'),

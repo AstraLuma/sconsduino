@@ -339,7 +339,7 @@ class Atmega328(Arduino):
 	"""
 
 	def __init__(self, *p, **kw):
-		super(Atmega328, self).__init__(self, *p, **kw)
+		super(Atmega328, self).__init__(*p, **kw)
 		self.partno = kw['partno']
 		self.env.Append(
 			COREPATH=self.env.Dir("$ARDUINO").Dir('hardware').Dir('arduino').Dir('cores').Dir('arduino'),
