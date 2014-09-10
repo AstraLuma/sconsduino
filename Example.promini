@@ -4,7 +4,7 @@ env = Environment()
 
 board = ProMini(
 	chip=328,
-	V=3.3
+	V=3.3,
 	env=env,
 	build_dir='build',
 	src_dir='.'

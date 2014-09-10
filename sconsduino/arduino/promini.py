@@ -1,4 +1,6 @@
 from .. import Arduino
+import stat
+import os
 
 class ProMini(Arduino):
 	PARTS = {
@@ -24,7 +26,7 @@ class ProMini(Arduino):
 		self.env.Append(
 			COREPATH=self.env.Dir("$ARDUINO").Dir('hardware').Dir('arduino').Dir('cores').Dir('arduino'),
 			CPPPATH=['$COREPATH', self.env.Dir("$ARDUINO").Dir("hardware").Dir("arduino").Dir("variants").Dir("standard")],
-			MCU=self.PARTS[self.chip]
+			MCU=self.PARTS[self.chip],
 			# C/C++
 			CCFLAGS=['-mmcu=$MCU'],
 			# C only

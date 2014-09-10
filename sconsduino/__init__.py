@@ -5,7 +5,7 @@ import glob
 ARDUINO_VER = 105
 
 class Arduino(object):
-	def __init__(self, sketch, env, src_dir='.', build_dir='.', **kw):
+	def __init__(self, env, src_dir='.', build_dir='.', **kw):
 		self.env = env
 		self.objects = []
 		self._load_config()
