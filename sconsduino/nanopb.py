@@ -68,5 +68,6 @@ class NanoPB(object):
 	def __iter__(self):
 		yield self.env.File("$NANOPB/pb_encode.c")
 		yield self.env.File("$NANOPB/pb_decode.c")
+		yield self.env.File("$NANOPB/pb_common.c")
 		for o in self.objects:
 			yield o
