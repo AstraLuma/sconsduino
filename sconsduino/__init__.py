@@ -78,11 +78,15 @@ class Arduino(object):
 		"""
 		for l in libs:
 			if os.path.exists(l):
-				self.add_generator(self._find_sources(l))
-				self.env.Append(CPPPATH=[l])
+				p = l,
 			else:
-				self.add_generator(self._find_sources(self.env['ARDUINO'], 'libraries', l))
-				self.env.Append(CPPPATH=[os.path.join('$ARDUINO', 'libraries', l)])
+				p = self.env['ARDUINO'], 'libraries', l
+
+			d = os.path.join(*p)
+			self.add_generator(self._find_sources(*p))
+			self.env.Append(CPPPATH=[d])
+			if os.path.exists(os.path.join(d, 'utility')):
+				self.env.Append(CPPPATH=[os.path.join(d, 'utility')])
 
 	def _find_sources(self, *dirs, **kw):
 		exts = kw.get('exts', ['.c', '.cpp'])
