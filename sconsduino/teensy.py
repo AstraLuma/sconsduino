@@ -63,6 +63,7 @@ class Teensy3(Arduino):
 		)
 
 	def upload_command(self):
+		# Has to be started now, because of scons environ mangling
 		subprocess.Popen([
 			os.path.join(self.env['ARDUINO'], 'hardware', 'tools', 'teensy')
 		])
