@@ -21,8 +21,12 @@ class Arduino(object):
 			CFLAGS=[],
 			# C++ only
 			CXXFLAGS=['-fno-exceptions', '-fno-rtti', '-felide-constructors'],
-			LINKFLAGS=['-Os', '-Wl,--gc-sections'],
+			LINKFLAGS=['-Os', '-Wl,--gc-sections', '-L'+str(self.build_dir)],
 		)
+		self.env.Replace(
+			LINK='$CC'
+		)
+		print self.env['LINK']
 	def _finish_init(self):
 		"""
 		MUST be called after all the bits have been defined.
