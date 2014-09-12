@@ -16,17 +16,16 @@ class Arduino(object):
 			CPPPATH = [self.src_dir],
 			CPPDEFINES = {'ARDUINO': ARDUINO_VER},
 			# C/C++
-			CCFLAGS=['-c', '-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections', '-MMD'],
+			CCFLAGS=['-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections', '-MMD'],
 			# C only
 			CFLAGS=[],
 			# C++ only
 			CXXFLAGS=['-fno-exceptions', '-fno-rtti', '-felide-constructors'],
 			LINKFLAGS=['-Os', '-Wl,--gc-sections', '-L'+str(self.build_dir)],
 		)
-		self.env.Replace(
-			LINK='$CC'
-		)
-		print self.env['LINK']
+		# self.env.Replace(
+		# 	LINK='$CC'
+		# )
 	def _finish_init(self):
 		"""
 		MUST be called after all the bits have been defined.

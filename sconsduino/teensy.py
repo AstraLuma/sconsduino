@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 from . import Arduino
-import os
-import subprocess
 
 class Teensy3(Arduino):
 	"""
@@ -63,10 +61,6 @@ class Teensy3(Arduino):
 		)
 
 	def upload_command(self):
-		# Has to be started now, because of scons environ mangling
-		subprocess.Popen([
-			os.path.join(self.env['ARDUINO'], 'hardware', 'tools', 'teensy')
-		])
 		return "$LOAD -mmcu=$MCU $LOADFLAGS $SOURCE"
 
 def Teensy(*p, **kw):
