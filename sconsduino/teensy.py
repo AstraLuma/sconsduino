@@ -67,11 +67,7 @@ class Teensy3(Arduino):
 		subprocess.Popen([
 			os.path.join(self.env['ARDUINO'], 'hardware', 'tools', 'teensy')
 		])
-		return [
-			"$ARDUINO/hardware/tools/teensy_post_compile -file=${SOURCE.name[:-4]} -path=${SOURCE.dir} -tools=$ARDUINO/hardware/tools",
-			"$ARDUINO/hardware/tools/teensy_reboot -p$MCU -chalfkay -P/dev/ttyACM0 -b12000000 -D -Uflash:w:$SOURCE:i",
-		]
-		# return "$LOAD -mmcu=$MCU $LOADFLAGS $SOURCE"
+		return "$LOAD -mmcu=$MCU $LOADFLAGS $SOURCE"
 
 def Teensy(*p, **kw):
 	v = kw['version']
