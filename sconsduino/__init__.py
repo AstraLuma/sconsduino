@@ -16,7 +16,7 @@ class Arduino(object):
 			CPPPATH = [self.src_dir],
 			CPPDEFINES = {'ARDUINO': ARDUINO_VER},
 			# C/C++
-			CCFLAGS=['-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections', '-MMD'], # XXX: Can I remove -MMD? I'm pretty sure I don't need it, since scons has a scanner that handles it
+			CCFLAGS=['-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections'], # Arduino also has -MMD, for reasons unknown to me
 			# C only
 			CFLAGS=[],
 			# C++ only
@@ -40,7 +40,7 @@ class Arduino(object):
 
 	def verify_config(self):
 		if not os.path.exists(self.config['ARDUINO_DIR']):
-			self.env.Exit("Misconfigured ARDUINO_DIR: {:r}".format(ARDUINO_DIR))
+			self.env.Exit("Misconfigured ARDUINO_DIR: {!r}".format(self.config['ARDUINO_DIR']))
 
 	def _load_config(self):
 		# FIXME: use a real config file
