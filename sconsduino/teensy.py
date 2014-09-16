@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import time
 from . import Arduino
 
 class Teensy3(Arduino):
@@ -12,11 +13,14 @@ class Teensy3(Arduino):
 		self.env.Append(
 			COREPATH=self.env.Dir("$ARDUINO").Dir('hardware').Dir('teensy').Dir('cores').Dir('teensy3'),
 			CPPPATH=['$COREPATH'],
-			CPPDEFINES={'TEENSYDUINO': 118},
+			CPPDEFINES={
+				'TEENSYDUINO': 118,
+				'TIME_T': int(time.time()),
+			},
 			# C/C++
 			CCFLAGS=['-mcpu=cortex-m4', '-mthumb', '-nostdlib'],
 			# C only
-			CFLAGS=['-std=gnu11'],
+			CFLAGS=[], # '-std=gnu11'
 			# C++ only
 			CXXFLAGS=['-std=gnu++11'],
 			LINKFLAGS=['-mcpu=cortex-m4', '-mthumb', '-T$LDSCRIPT'],

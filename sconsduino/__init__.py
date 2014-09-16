@@ -16,16 +16,16 @@ class Arduino(object):
 			CPPPATH = [self.src_dir],
 			CPPDEFINES = {'ARDUINO': ARDUINO_VER},
 			# C/C++
-			CCFLAGS=['-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections', '-MMD'],
+			CCFLAGS=['-g', '-Os', '-Wall', '-ffunction-sections', '-fdata-sections', '-MMD'], # XXX: Can I remove -MMD? I'm pretty sure I don't need it, since scons has a scanner that handles it
 			# C only
 			CFLAGS=[],
 			# C++ only
 			CXXFLAGS=['-fno-exceptions', '-fno-rtti', '-felide-constructors'],
 			LINKFLAGS=['-Os', '-Wl,--gc-sections', '-L'+str(self.build_dir)],
 		)
-		# self.env.Replace(
-		# 	LINK='$CC'
-		# )
+		self.env.Replace(
+			LINK='$CC'
+		)
 	def _finish_init(self):
 		"""
 		MUST be called after all the bits have been defined.
@@ -123,7 +123,8 @@ class Arduino(object):
 		self.add_generator(self._find_sources(core))
 
 	def add(self, src):
-		base, ext = os.path.splitext(os.path.basename(str(src)))
+		base = os.path.basename(str(src))
+		_, ext = os.path.splitext(base)
 		if ext not in ('.c', '.cpp'):
 			raise ValueError("Unknown extension: {}".format(ext))
 		self.objects += self.env.Object(self.build_dir.File(base+'.o'), src)
