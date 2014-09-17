@@ -20,7 +20,7 @@ class Teensy3(Arduino):
 			# C/C++
 			CCFLAGS=['-mcpu=cortex-m4', '-mthumb', '-nostdlib'],
 			# C only
-			CFLAGS=[], # '-std=gnu11'
+			CFLAGS=['-std=gnu11'],
 			# C++ only
 			CXXFLAGS=['-std=gnu++11'],
 			LINKFLAGS=['-mcpu=cortex-m4', '-mthumb', '-T$LDSCRIPT'],
