@@ -15,7 +15,7 @@ class Teensy3(Arduino):
 			CPPPATH=['$COREPATH'],
 			CPPDEFINES={
 				'TEENSYDUINO': 118,
-				'TIME_T': int(time.time()),
+				#'TIME_T': int(time.time()),
 			},
 			# C/C++
 			CCFLAGS=['-mcpu=cortex-m4', '-mthumb', '-nostdlib'],
