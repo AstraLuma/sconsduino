@@ -78,7 +78,7 @@ class Arduino(object):
 		Add Arduino libraries
 		"""
 		for l in libs:
-			if not lib:
+			if not l:
 				self.env.Exit("Cowardly refusing to add an empty library.")
 			if os.path.exists(l):
 				p = l,
