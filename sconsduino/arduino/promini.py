@@ -56,5 +56,9 @@ class ProMini(Arduino):
 			self.env.Exit("SERIAL_PORT not a character device")
 
 	def upload_command(self):
-		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -p$MCU -carduino -P{} -b19200 -D -Uflash:w:$SOURCE:i".format(self.config['SERIAL_PORT'])
+		if self.chip == 328:
+			baud = 57600
+		elif self.chip == 168:
+			baud = 19200
+		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -p$MCU -carduino -P{} -b{} -D -Uflash:w:$SOURCE:i".format(self.config['SERIAL_PORT'], baud)
 
