@@ -46,7 +46,7 @@ class ProMini(Arduino):
 	def default_config(self):
 		d = super(ProMini, self).default_config()
 		d.update(
-			SERIAL_PORT = '/dev/ttyACM0',
+			SERIAL_PORT = '/dev/ttyUSB0',
 		)
 		return d
 
