@@ -86,6 +86,10 @@ class Arduino(object):
 				p = self.env['ARDUINO'], 'libraries', l
 
 			d = os.path.join(*p)
+
+			if not os.path.exists(d):
+				self.env.Exit("Can't find library {!r} ({})".format(l, d))
+
 			self.add_generator(self._find_sources(*p))
 			self.env.Append(CPPPATH=[d])
 			if os.path.exists(os.path.join(d, 'utility')):
@@ -129,10 +133,12 @@ class Arduino(object):
 			raise ValueError("Unknown extension: {}".format(ext))
 		self.objects += self.env.Object(self.build_dir.File(base+'.o'), src)
 
-	def sketch(self, sketch):
+	def sketch(self, sketch, upload=True):
 		self.add_generator(self._find_sources(self.src_dir))
 		elf = self.env.Program(sketch+'.elf', self.objects)
 		eep = self.env.Command(sketch+'.eep', elf, '$OBJCOPY -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $SOURCE $TARGET')
 		hex = self.env.Command(sketch+'.hex', elf, '$OBJCOPY -O ihex -R .eeprom $SOURCE $TARGET')
 		self.env.Default(hex, eep)
-		self.env.Alias('upload', self.env.Command(None, hex, self.upload_command()))
+		self.env.Alias('upload-'+sketch, self.env.Command(None, hex, self.upload_command()))
+		if upload:
+			self.env.Alias('upload', self.env.Command(None, hex, self.upload_command()))
