@@ -39,6 +39,9 @@ class NanoPB(object):
 			CPPPATH=['$NANOPB', self.build_dir],
 			CPPDEFINES=defs,
 			PROTOPATH='-Iprotocols',
+		)
+		# Variables have to be in place before Builder() is called.
+		self.env.Append(
 			BUILDERS={
 				'Proto': self.env.Builder(action='$PROTOC --plugin=protoc-gen-nanopb=$NANOPB/generator/protoc-gen-nanopb --nanopb_out=. $PROTOPATH $SOURCE',
 					#suffix=['.pb.c', '.pb.h'],
