@@ -30,14 +30,13 @@ teensy.sketch('blinky')
 
 class NanoPB(object):
 	build_dir = None
-	def __init__(self, env, defs={}, build_dir=None):
+	def __init__(self, env, build_dir=None):
 		self.env = env
 		self.build_dir = self.env.Dir(build_dir or '.')
 		self.env.Append(
 			PROTOC='protoc',
 			NANOPB=self._findnano(),
 			CPPPATH=['$NANOPB', self.build_dir],
-			CPPDEFINES=defs,
 			PROTOPATH='-Iprotocols',
 		)
 		# Variables have to be in place before Builder() is called.
