@@ -42,12 +42,14 @@ class NanoPB(object):
 		# Variables have to be in place before Builder() is called.
 		self.env.Append(
 			BUILDERS={
-				'Proto': self.env.Builder(action='$PROTOC --plugin=protoc-gen-nanopb=$NANOPB/generator/protoc-gen-nanopb --nanopb_out=. $PROTOPATH $SOURCE',
+				'Proto': self.env.Builder(
+					action='$PROTOC --plugin=protoc-gen-nanopb=$NANOPB/generator/protoc-gen-nanopb --nanopb_out={} $PROTOPATH $SOURCE'
+						.format(self.build_dir.get_abspath()),
 					#suffix=['.pb.c', '.pb.h'],
 					src_suffix='.proto',
 					),
 			}
-		)
+		)z
 		self.objects = []
 
 	def _findnano(self):
