@@ -30,21 +30,21 @@ teensy.sketch('blinky')
 
 class NanoPB(object):
 	build_dir = None
-	def __init__(self, env, build_dir=None):
+	def __init__(self, env, src_dir=None, build_dir=None):
 		self.env = env
+		self.src_dir = self.env.Dir(src_dir or '.')
 		self.build_dir = self.env.Dir(build_dir or '.')
 		self.env.Append(
 			PROTOC='protoc',
 			NANOPB=self._findnano(),
 			CPPPATH=['$NANOPB'],
-			#PROTOPATH='-Iprotocols',
 		)
 		# Variables have to be in place before Builder() is called.
 		self.env.Append(
 			BUILDERS={
 				'Proto': self.env.Builder(
-					action='$PROTOC --plugin=protoc-gen-nanopb=$NANOPB/generator/protoc-gen-nanopb --nanopb_out={} $PROTOPATH $$SOURCE'
-						.format(self.build_dir.get_abspath()),
+					action='$PROTOC --plugin=protoc-gen-nanopb=$NANOPB/generator/protoc-gen-nanopb --proto_path={} --nanopb_out={} $PROTOFLAGS $$SOURCE'
+						.format(self.src_dir, self.build_dir.get_abspath()),
 					#suffix=['.pb.c', '.pb.h'],
 					src_suffix='.proto',
 					),
@@ -61,8 +61,8 @@ class NanoPB(object):
 			return syspath
 
 	def add(self, src):
-		src = self.env.File(src)
-		fn = str(src)
+		src = self.src_dir.File(src)
+		fn = os.path.basename(str(src))
 		b, e = os.path.splitext(fn)
 		cdest = self.build_dir.File(b+'.pb.c')
 		hdest = self.build_dir.File(b+'.pb.h')
