@@ -36,20 +36,20 @@ class NanoPB(object):
 		self.env.Append(
 			PROTOC='protoc',
 			NANOPB=self._findnano(),
-			CPPPATH=['$NANOPB', self.build_dir],
-			PROTOPATH='-Iprotocols',
+			CPPPATH=['$NANOPB'],
+			#PROTOPATH='-Iprotocols',
 		)
 		# Variables have to be in place before Builder() is called.
 		self.env.Append(
 			BUILDERS={
 				'Proto': self.env.Builder(
-					action='$PROTOC --plugin=protoc-gen-nanopb=$NANOPB/generator/protoc-gen-nanopb --nanopb_out={} $PROTOPATH $SOURCE'
+					action='$PROTOC --plugin=protoc-gen-nanopb=$NANOPB/generator/protoc-gen-nanopb --nanopb_out={} $PROTOPATH $$SOURCE'
 						.format(self.build_dir.get_abspath()),
 					#suffix=['.pb.c', '.pb.h'],
 					src_suffix='.proto',
 					),
 			}
-		)z
+		)
 		self.objects = []
 
 	def _findnano(self):
@@ -62,12 +62,15 @@ class NanoPB(object):
 
 	def add(self, src):
 		src = self.env.File(src)
-		fn = os.path.basename(str(src))
+		fn = str(src)
 		b, e = os.path.splitext(fn)
 		cdest = self.build_dir.File(b+'.pb.c')
 		hdest = self.build_dir.File(b+'.pb.h')
 		p = self.env.Proto([cdest, hdest], src)
 		self.objects += [o for o in p if str(o).endswith('.c')]
+		self.env.Append(
+			CPPPATH=[hdest.get_dir()]
+		)
 
 	def __iter__(self):
 		yield self.env.File("$NANOPB/pb_encode.c")
