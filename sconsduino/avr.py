@@ -380,4 +380,4 @@ class Atmega328(Arduino):
 		f = ""
 		if hasattr(self, 'fuses'):
 			f = "-Ulfuse:w:0x{:02x}:m -Uhfuse:w:0x{:02x}:m -Uefuse:w:0x{:02x}:m".format(*self.fuses)
-		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -patmega328p -cstk500v1 -P{} -b19200 -Uflash:w:$SOURCE:i".format(self.config['SERIAL_PORT'])
+		return "$ARDUINO/hardware/tools/avrdude -C$ARDUINO/hardware/tools/avrdude.conf -patmega328p -cstk500v1 -P{} -b19200 {} -Uflash:w:$SOURCE:i".format(self.config['SERIAL_PORT'], f)
