@@ -15,10 +15,10 @@ class ProMini(Arduino):
 	def __init__(self, *p, **kw):
 		super(ProMini, self).__init__(*p, **kw)
 		self.chip = kw['chip']
-		if self.chip not in (168,328):
+		if self.chip not in self.PARTS:
 			raise ValueError("chip must be 168 or 328")
-		self.volt = kw['V']
-		if self.volt not in (5,5.0,3.3):
+		self.volt = float(kw['V'])
+		if self.volt not in self.SPEED:
 			raise ValueError("V must be 5 or 3.3")
 
 		self.cpu(self.SPEED[self.volt])
