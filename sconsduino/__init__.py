@@ -27,13 +27,6 @@ class Arduino(object):
 			LINK='$CC'
 		)
 		
-	def _finish_init(self):
-		"""
-		MUST be called after all the bits have been defined.
-		"""
-		self.env.Append(
-		)
-
 	def default_config(self):
 		return dict(
 			ARDUINO_DIR = "/usr/share/arduino",

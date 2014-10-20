@@ -44,7 +44,6 @@ class Teensy3(Arduino):
 				MCU='mk20dx256',
 			)
 		self._find_core(self.env['COREPATH'])
-		self._finish_init()
 
 	def usb_mode(self, mode):
 		"""

@@ -359,7 +359,6 @@ class Atmega328(Arduino):
 			**self._find_tools(self.env.Dir("$ARDUINO").Dir('hardware').Dir('tools').Dir('avr').Dir('bin'), prefix='avr-')
 		)
 		self._find_core(self.env['COREPATH'])
-		self._finish_init()
 
 	def fuses(self):
 		return _FuseManager(self)
