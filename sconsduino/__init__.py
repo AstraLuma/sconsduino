@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import os.path
 import glob
 
-ARDUINO_VER = 105
+ARDUINO_VER = 106
 
 class Arduino(object):
 	def __init__(self, env, src_dir='.', build_dir='.', **kw):
